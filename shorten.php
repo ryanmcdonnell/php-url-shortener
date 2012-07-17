@@ -12,14 +12,20 @@ if($parsed_url['host'] != LIMIT_TO_DOMAIN)
 $db = new mysqli(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE);
 $db->set_charset('utf8');
 $url = $db->real_escape_string($url);
-$result = $db->query('INSERT INTO redirect (url, date, hits) VALUES ("' . $url . '", NOW(), 0)');
-if($result):
-	$id = base_convert($db->insert_id, 10, 36);
-	?>
+
+// Check for existing URL
+$result = $db->query("SELECT id FROM redirect WHERE url = '$url' LIMIT 1");
+if($result && $result->num_rows > 0):
+	$id = base_convert($result->fetch_object()->id, 10, 36);
+else:
+	$result = $db->query('INSERT INTO redirect (url, date) VALUES ("' . $url . '", NOW())');
+	if($result):
+		$id = base_convert($db->insert_id, 10, 36);
+	else:
+		die('A database error occured: '.$db->error);
+	endif;
+endif;
+?>
 <p>
 	<input type="text" size="150" value="<?php echo SHORT_URL.$id; ?>" onFocus="this.select()" />
 </p>
-	<?php
-else:
-	die('A database error occured: '.$db->error);
-endif;
